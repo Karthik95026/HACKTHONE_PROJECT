@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Guard AI Alert</title>
+    <style>
+        /* --- CSS Styles --- */
+        :root {
+            /* iOS-style dark theme colors */
+            --bg-overlay: rgba(0, 0, 0, 0.7);
+            --card-bg: #1c1c1e; /* Dark grey */
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93; /* Light grey */
+            --accent-red: #ff453a;
+            --accent-green: #32d74b;
+            --accent-yellow: #ffd60a;
+            --button-red-bg: #4a0e0e;
+            --button-red-text: #ff6961;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            /* Transparent background, only the alert will show */
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* The Alert Card */
+        .alert-card {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 375px; /* Approx iPhone width */
+            border-radius: 28px; /* Rounded corners */
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: scale(0.95);
+            animation: popIn 0.3s ease-out forwards;
+            color: var(--text-primary);
+        }
+
+        /* Pop-in animation */
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Header (App Title) */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .app-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-red);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+        }
+
+        .app-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        /* Caller Info Section */
+        .caller-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            background-color: #3a3a3c;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #8e8e93;
+            font-size: 24px;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .name {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .number {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .caller-type {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* AI Probability Meter Section */
+        .meter-section {
+            text-align: center;
+            margin-bottom: 24px;
+            background-color: rgba(255, 255, 255, 0.03);
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .meter-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .meter-visual {
+            position: relative;
+            height: 70px; /* Adjust based on needs */
+            width: 100%;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        /* The curved meter background */
+        .meter-arc {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100px;
+            border-radius: 100px 100px 0 0;
+            background: conic-gradient(
+                from 270deg at 50% 100%,
+                var(--accent-green) 0deg,
+                var(--accent-yellow) 90deg,
+                var(--accent-red) 180deg
+            );
+            mask: radial-gradient(transparent 50%, black 51%);
+            -webkit-mask: radial-gradient(transparent 65%, black 66%);
+        }
+
+        /* The percentage text */
+        .percentage-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 56px;
+            font-weight: 800;
+            color: var(--accent-red);
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+
+        /* The likelihood text */
+        .likelihood-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-top: 4px;
+        }
+
+        /* Reasons Section */
+        .reasons-section {
+            margin-bottom: 28px;
+        }
+
+        .reasons-header {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .reasons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reason-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 15px;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .reason-icon {
+            margin-top: 2px;
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* Single Action Button (Modified) */
+        .actions {
+            display: flex;
+            /* Single button, no gap needed */
+        }
+
+        .btn {
+            width: 100%; /* Full width */
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-decline {
+            background-color: var(--button-red-bg);
+            color: var(--button-red-text);
+        }
+
+        .btn-decline:active {
+            background-color: #5c1212;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- The Alert Card Container -->
+    <div class="alert-card">
+        <!-- Header -->
+        <div class="header">
+            <div class="app-icon">AI</div>
+            <div class="app-title">Voice Guard AI Alert</div>
+        </div>
+
+        <!-- Caller Info -->
+        <div class="caller-info">
+            <div class="avatar">
+                👤
+            </div>
+            <div class="details">
+                <div class="name" id="caller-name">Loading...</div>
+                <div class="number" id="caller-number">Loading...</div>
+                <div class="caller-type">Mobile Caller</div>
+            </div>
+        </div>
+
+        <!-- Probability Meter -->
+        <div class="meter-section">
+            <div class="meter-label">AI Probability</div>
+            <div class="meter-visual">
+                <div class="meter-arc"></div>
+                <div class="percentage-text" id="ai-score">0%</div>
+            </div>
+            <div class="likelihood-text" id="ai-likelihood">Analysis...</div>
+        </div>
+
+        <!-- Reasons -->
+        <div class="reasons-section">
+            <div class="reasons-header">Reasons:</div>
+            <div class="reasons-list" id="reasons-container">
+                <!-- Reasons will be populated here by JS -->
+            </div>
+        </div>
+
+        <!-- Single Action Button -->
+        <div class="actions">
+            <button class="btn btn-decline" onclick="onDecline()">DECLINE</button>
+            <!-- ACCEPT button removed here -->
+        </div>
+    </div>
+
+    <script>
+        // --- JavaScript (Frontend Code) ---
+
+        // Mock data (unchanged)
+        const backendData = {
+            callerName: "Alex Johnson",
+            callerNumber: "+1 (555) 019-8822",
+            aiProbabilityScore: 88, 
+            reasons: [
+                {
+                    id: 1,
+                    text: "Unnatural Speech Patterns detected",
+                    icon: "🤖"
+                },
+                {
+                    id: 2,
+                    text: "Abnormally consistent response timing",
+                    icon: "⏱️"
+                },
+                {
+                    id: 3,
+                    text: "Voice signature match with known AI bot",
+                    icon: "💾"
+                }
+            ]
+        };
+
+        // Utility functions (unchanged)
+        function getScoreColor(score) {
+            if (score < 40) return 'var(--accent-green)';
+            if (score < 75) return 'var(--accent-yellow)';
+            return 'var(--accent-red)';
+        }
+
+        function getLikelihoodText(score) {
+            if (score < 40) return 'LOW LIKELIHOOD';
+            if (score < 75) return 'MODERATE LIKELIHOOD';
+            return 'HIGH LIKELIHOOD';
+        }
+
+        // Data Binding (unchanged)
+        function initializeUI(data) {
+            document.getElementById('caller-name').textContent = data.callerName;
+            document.getElementById('caller-number').textContent = data.callerNumber;
+
+            const scoreEl = document.getElementById('ai-score');
+            const likelihoodEl = document.getElementById('ai-likelihood');
+            const scoreColor = getScoreColor(data.aiProbabilityScore);
+
+            scoreEl.textContent = data.aiProbabilityScore + '%';
+            scoreEl.style.color = scoreColor;
+            likelihoodEl.textContent = getLikelihoodText(data.aiProbabilityScore);
+            likelihoodEl.style.color = scoreColor;
+
+            const reasonsContainer = document.getElementById('reasons-container');
+            reasonsContainer.innerHTML = '';
+
+            data.reasons.forEach(reason => {
+                const reasonItem = document.createElement('div');
+                reasonItem.className = 'reason-item';
+                reasonItem.innerHTML = `
+                    <span class="reason-icon">${reason.icon}</span>
+                    <span>${reason.text}</span>
+                `;
+                reasonsContainer.appendChild(reasonItem);
+            });
+        }
+
+        // Interaction Handler (simplified)
+        function onDecline() {
+            alert('Call declined.');
+            // Logic to end call or close the overlay goes here
+        }
+
+        // Run on load
+        window.onload = function() {
+            initializeUI(backendData);
+        };
+
+    </script>
+
+</body>
+</html>
